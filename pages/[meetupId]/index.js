@@ -1,54 +1,56 @@
 import MeetupDetail from "../../components/meetups/MeetupDetail";
+import { MongoClient,ObjectId } from "mongodb";
 
-function MeetupDetails() {
+function MeetupDetails(props) {
   return (
     <MeetupDetail
-      image="https://cdn.dnaindia.com/sites/default/files/styles/full/public/2018/05/20/684461-urban-city.jpg"
-      title="the first meetup"
-      address="Nagpur"
-      description="this is the best place"
+      image={props.meetupData.image}
+      title={props.meetupData.title}
+      address={props.meetupData.address}
+      description={props.meetupData.description}
     />
   );
 }
 
 export async function getStaticPaths() {
+
+  const client = await MongoClient.connect('mongodb+srv://roshgupta17:Anika123456@cluster0.dlnrdlu.mongodb.net/meetups?retryWrites=true&w=majority');
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+
+  const meetups = await meetupsCollection.find({},{_id:1}).toArray();
+  client.close()
+
+
   return {
-    fallback:true,
-    paths: [
-      {
-        params: {
-          meetupId: "m1",
-        },
-      },
-      {
-        params: {
-          meetupId: "m2",
-        },
-      },
-      {
-        params: {
-          meetupId: "m3",
-        },
-      },
-      
-    ],
+    fallback:false,
+    paths:meetups.map((meetup)=>({
+      params:{meetupId:meetup._id.toString()}
+    }))
   };
 }
 
 export async function getStaticProps(context) {
   const meetupId = context.params.meetupId;
 
+  const client = await MongoClient.connect('mongodb+srv://roshgupta17:Anika123456@cluster0.dlnrdlu.mongodb.net/meetups?retryWrites=true&w=majority');
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+
+  const selectedMeetup = await meetupsCollection.findOne({_id:new ObjectId(meetupId)})
+
+  client.close()
+
   console.log(meetupId)
 
   return {
     props: {
       meetupData: {
-        image:
-          "https://cdn.dnaindia.com/sites/default/files/styles/full/public/2018/05/20/684461-urban-city.jpg",
-        id: meetupId,
-        title: "the first meetup",
-        address: "Nagpur",
-        description: "this is the best place",
+       id:selectedMeetup._id.toString(),
+       title:selectedMeetup.title,
+       image:selectedMeetup.image,
+       address:selectedMeetup.address,
+       description:selectedMeetup.description
       },
     },
   };
